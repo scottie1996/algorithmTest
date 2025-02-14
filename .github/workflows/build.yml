@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main  # 仅在 PR 触发时执行
+  workflow_dispatch:  # 👈 允许手动触发
 
 jobs:
   build:
