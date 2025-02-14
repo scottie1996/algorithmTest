@@ -1,0 +1,22 @@
+stages:
+  - test
+  - build
+  - push
+
+test:
+  stage: test
+  image: python:3.8
+  script:
+    - pip install -r operators/csv_avg_calculator/requirements.txt
+    - python operators/csv_avg_calculator/test_calculate_avg.py
+
+build:
+  stage: build
+  script:
+    - docker build -t harbor.mycompany.com/operators/csv_avg_calculator:latest -f operators/csv_avg_calculator/Dockerfile .
+
+push:
+  stage: push
+  script:
+    - echo "$HARBOR_PASSWORD" | docker login harbor.mycompany.com -u "$HARBOR_USER" --password-stdin
+    - docker push harbor.mycompany.com/operators/csv_avg_calculator:latest

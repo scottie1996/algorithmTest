@@ -1,0 +1,40 @@
+name: csv_avg_calculator  # 算子名称
+version: "1.0.0"  # 版本号
+description: "计算 CSV 文件中某一列的平均值"  # 简要描述
+author: 
+  name: "Alice"
+  email: "alice@example.com"
+tags: ["python", "data-processing", "csv", "pandas"]  # 标签
+
+runtime:  
+  language: python  # 运行环境 (Python)
+  framework: "pandas"  # 依赖 Pandas 处理数据
+  dependencies: "requirements.txt"  # 依赖文件 (requirements.txt)
+
+image:  
+  registry: harbor.example.com  # Harbor 仓库地址
+  repository: operators/csv_avg_calculator  # Harbor 里的镜像路径
+  tag: "1.0.0"  # 镜像版本
+  build: true  # 需要 CI/CD 自动构建
+
+entrypoint: "python calculate_avg.py"  # 运行命令
+
+inputs:  
+  - name: input_csv
+    type: "string"
+    required: true
+    description: "CSV 文件路径"
+  
+  - name: column_name
+    type: "string"
+    required: true
+    description: "需要计算平均值的列名"
+
+outputs:  
+  - name: output_json
+    type: "string"
+    description: "包含计算结果的 JSON 文件"
+
+test:  
+  script: "test_calculate_avg.py"  # 测试脚本路径
+  expected_output: "expected_output.json"  # 预期输出文件
