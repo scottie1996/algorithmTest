@@ -1,0 +1,43 @@
+name: Build & Push Operator Image
+
+on:
+  push:
+    branches:
+      - main  # 仅在推送到 main 分支时执行
+  pull_request:
+    branches:
+      - main  # 仅在 PR 触发时执行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛠️ Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 📦 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: 🔍 Install Dependencies
+        run: pip install -r operators/csv_avg_calculator/requirements.txt
+
+      - name: ✅ Run Unit Tests
+        run: python operators/csv_avg_calculator/test_calculate_avg.py
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: 🔑 Log in to Harbor
+        run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login myharbor.com -u "${{ secrets.HARBOR_USER }}" --password-stdin
+
+      - name: 🏗️ Build & Push Docker Image
+        run: |
+          OPERATOR_NAME=$(cat operators/csv_avg_calculator/operator.yaml | grep "name:" | awk '{print $2}')
+          docker build -t myharbor.com/operators/$OPERATOR_NAME:latest operators/csv_avg_calculator/
+          docker push myharbor.com/operators/$OPERATOR_NAME:latest
+
+      - name: 📖 Update README (if public)
+        run: python scripts/update_readme.py
