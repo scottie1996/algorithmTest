@@ -42,5 +42,5 @@ jobs:
           docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest operators/csv_avg_calculator/
           docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
 
-      - name: 📖 Update README (if public)
-        run: python scripts/update_readme.py
+      #- name: 📖 Update README (if public)
+        #run: python scripts/update_readme.py
