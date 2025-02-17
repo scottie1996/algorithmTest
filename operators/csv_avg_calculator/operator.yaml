@@ -1,4 +1,4 @@
-name: csv_avg_calculator
+OperatorName: csv_avg_calculator
 version: "1.0.0"  # 版本号
 description: "计算 CSV 文件中某一列的平均值"  # 简要描述
 author: 
