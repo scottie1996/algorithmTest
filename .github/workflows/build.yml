@@ -32,7 +32,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: 🔑 Log in to Harbor
-        run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login myharbor.com -u "${{ secrets.HARBOR_USER }}" --password-stdin
+        run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login fairmarket.casdc.cn --username "${{ secrets.HARBOR_USER }}" --password-stdin
 
       - name: 🏗️ Build & Push Docker Image
         run: |
