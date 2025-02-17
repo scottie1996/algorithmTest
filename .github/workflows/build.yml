@@ -36,7 +36,9 @@ jobs:
 
       - name: 🏗️ Build & Push Docker Image
         run: |
+          set -x
           OPERATOR_NAME=$(awk '/name:/ {print $NF}' operators/csv_avg_calculator/operator.yaml)
+          echo "Extracted OPERATOR_NAME: $OPERATOR_NAME"
           docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest operators/csv_avg_calculator/
           docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
 
