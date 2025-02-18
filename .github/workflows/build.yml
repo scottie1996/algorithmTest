@@ -32,8 +32,8 @@ jobs:
             echo "Processing operator: $OPERATOR"
 
             # 确认 operator.yaml 的格式是否正确
-            echo "Checking operator.yaml format..."
-            cat operators/$OPERATOR/operator.yaml
+            #echo "Checking operator.yaml format..."
+            #cat operators/$OPERATOR/operator.yaml
 
             # 1️⃣ 生成 requirements.txt
             echo "Generating requirements.txt from operator.yaml..."
@@ -51,6 +51,19 @@ jobs:
             echo "Extracted OPERATOR_NAME: $OPERATOR_NAME"
 
             # 5️⃣ 构建 & 推送 Docker 镜像
-            docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest operators/$OPERATOR/
+            # 读取 operator.yaml 中的 version 字段
+            VERSION=$(awk -F': ' '/version:/ {print $2}' operators/$OPERATOR/operator.yaml | tr -d '"')
+            
+            # 确保 version 变量不为空
+            if [[ -z "$VERSION" ]]; then
+                echo "Error: Version not found in operator.yaml"
+                exit 1
+            fi
+            # 构建 & 推送 Docker 镜像
+            docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION operators/$OPERATOR/
+            docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION
+
+            # 仍然推送一个 latest 标签
+            docker tag fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
             docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
           done
