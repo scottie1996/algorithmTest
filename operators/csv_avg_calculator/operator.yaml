@@ -1,21 +1,23 @@
 operatorName: csv_avg_calculator
-version: "1.0.0"  # 版本号
-description: "计算 CSV 文件中某一列的平均值"  # 简要描述
+
+operatorDescription: "计算 CSV 文件中某一列的平均值"
+
+operatorInstructions: "算子使用说明"
+version: "1.0.0"
 author: 
   name: "Alice"
   email: "alice@example.com"
 tags: ["python", "data-processing", "csv", "pandas"]  # 标签
 
-runtime:  
-  language: python  # 运行环境 (Python)
-  framework: "pandas"  # 依赖 Pandas 处理数据
-  dependencies: "requirements.txt"  # 依赖文件 (requirements.txt)
+runtime:
+  dependencies: 
+    - pandas==1.3.3
+    - numpy==1.21.2
 
-image:  
-  registry: harbor.example.com  # Harbor 仓库地址
-  repository: operators/csv_avg_calculator  # Harbor 里的镜像路径
-  tag: "1.0.0"  # 镜像版本
-  build: true  # 需要 CI/CD 自动构建
+baseImage:  
+  type: "official"  # 选项: "custom"（自定义）或 "official"（官方）
+  customImage: "harbor.example.com/base/python:3.8"  # 用户上传的自定义基础镜像
+  officialImage: "python:3.8"  # 官网官方基础镜像
 
 entrypoint: "python calculate_avg.py"  # 运行命令
 
