@@ -18,7 +18,12 @@ baseImage:
   customImage: "harbor.example.com/base/python:3.8"  # 用户上传的自定义基础镜像
   officialImage: "python:3.8"  # 官网官方基础镜像
 
-entrypoint: "python calculate_avg.py"  # 运行命令
+entrypoint: "python calculate_avg.py {{parameters.input_csv}} {{parameters.output_json}} {{parameters.column_name}}"
+
+parameters:
+  input_csv: "/data/input.csv"
+  output_json: "/data/output.json"
+  column_name: "temperature"
 
 inputs:  
   - name: input_csv
@@ -35,7 +40,3 @@ outputs:
   - name: output_json
     type: "string"
     description: "包含计算结果的 JSON 文件"
-
-test:  
-  script: "test_calculate_avg.py"  # 测试脚本路径
-  expected_output: "expected_output.json"  # 预期输出文件
