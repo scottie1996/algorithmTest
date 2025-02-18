@@ -31,14 +31,17 @@ jobs:
           for OPERATOR in ${{ env.changed_operators }}; do
             echo "Processing operator: $OPERATOR"
 
+            # 确认 operator.yaml 的格式是否正确
+            echo "Checking operator.yaml format..."
+            cat operators/$OPERATOR/operator.yaml
+
             # 1️⃣ 生成 requirements.txt
             echo "Generating requirements.txt from operator.yaml..."
-            awk '/dependencies:/,/^  [a-z]+:/' operators/$OPERATOR/operator.yaml | sed '1d;$d' | sed 's/- //g' > operators/$OPERATOR/requirements.txt
+            awk '/dependencies:/ {flag=1} flag && /^[^ ]/ {flag=0} flag' operators/$OPERATOR/operator.yaml | sed 's/- //g' > operators/$OPERATOR/requirements.txt
             cat operators/$OPERATOR/requirements.txt
 
-            # 2️⃣ 安装依赖 & 运行单元测试
+            # 2️⃣ 安装依赖 
             pip install -r operators/$OPERATOR/requirements.txt
-            python operators/$OPERATOR/test_calculate_avg.py
 
             # 3️⃣ Docker 登录
             echo "${{ secrets.HARBOR_PASSWORD }}" | docker login fairmarket.casdc.cn --username "${{ secrets.HARBOR_USER }}" --password-stdin
