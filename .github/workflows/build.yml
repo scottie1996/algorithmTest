@@ -16,6 +16,12 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: 📄 Generate requirements.txt
+        run: |
+          echo "Generating requirements.txt from operator.yaml..."
+          awk '/dependencies:/,/^  [a-z]+:/' operators/csv_avg_calculator/operator.yaml | sed '1d;$d' | sed 's/- //g' > operators/csv_avg_calculator/requirements.txt
+          cat operators/csv_avg_calculator/requirements.txt
+
       - name: 🔍 Install Dependencies
         run: pip install -r operators/csv_avg_calculator/requirements.txt
 
