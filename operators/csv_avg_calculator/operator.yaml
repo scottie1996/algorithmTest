@@ -1,13 +1,12 @@
 operatorName: csv_avg_calculator
 
 operatorDescription: "计算 CSV 文件中某一列的平均值"
-
+operatorGroups: "cnic"
 operatorInstructions: "算子使用说明"
 version: "1.0.0"
 author: 
   name: "Alice"
   email: "alice@example.com"
-tags: ["python", "data-processing", "csv", "pandas"]  # 标签
 
 runtime:
   dependencies: 
