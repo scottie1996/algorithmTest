@@ -1,12 +1,6 @@
 name: Build & Push Operator Image
 
 on:
-  push:
-    branches:
-      - main  # 仅在推送到 main 分支时执行
-  pull_request:
-    branches:
-      - main  # 仅在 PR 触发时执行
   workflow_dispatch:  # 👈 允许手动触发
 
 jobs:
