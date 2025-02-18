@@ -70,26 +70,26 @@ jobs:
             # 仍然推送一个 latest 标签
             docker tag fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
             docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
+
+
+            # 7️⃣ 更新 `operators_list.json`
+            echo "Updating operators_list.json..."
+            if [ ! -f operators_list.json ]; then
+              echo "[]" > operators_list.json
+            fi
+
+            cat operators_list.json | jq --arg name "$OPERATOR_NAME" --arg version "$VERSION" '
+            map(if .name == $name then .version = $version else . end) +
+            if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
+            mv tmp.json operators_list.json
+
           done
 
-      - name: 🔄 Update operators_list.json (After Push)
-        run: |
-          # 读取现有 JSON 文件（如果不存在则创建）
-          if [ ! -f operators_list.json ]; then
-            echo "[]" > operators_list.json
-          fi
-
-          # 更新 JSON 文件，保持最新版本
-          cat operators_list.json | jq --arg name "${{ env.operator }}" --arg version "${{ env.version }}" '
-          map(if .name == $name then .version = $version else . end) +
-          if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
-
-          mv tmp.json operators_list.json
           
       - name: 🚀 Commit & Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
           git add operators_list.json
-          git commit -m "🔄 Update operator list: ${{ env.operator }} v${{ env.version }}" || echo "No changes to commit"
+          git commit -m "🔄 Update operator list" || echo "No changes to commit"
           git push
