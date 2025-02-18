@@ -37,7 +37,7 @@ jobs:
 
             # 1️⃣ 生成 requirements.txt
             echo "Generating requirements.txt from operator.yaml..."
-            awk '/dependencies:/ {flag=1} flag && /^[^ ]/ {flag=0} flag' operators/$OPERATOR/operator.yaml | sed 's/- //g' > operators/$OPERATOR/requirements.txt
+            awk '/dependencies:/, /baseImage:/ {if ($0 !~ "dependencies:" && $0 !~ "baseImage:") print $0}' operators/$OPERATOR/operator.yaml | sed 's/^- //g' > operators/$OPERATOR/requirements.txt
             cat operators/$OPERATOR/requirements.txt
 
             # 2️⃣ 安装依赖 
