@@ -50,6 +50,9 @@ jobs:
             OPERATOR_NAME=$(awk '/operatorName:/ {print $NF}' operators/$OPERATOR/operator.yaml)
             echo "Extracted OPERATOR_NAME: $OPERATOR_NAME"
 
+            #- name: 📝 Generate Dockerfile from YAML
+            #run: python generate_dockerfile.py operators/${{ env.OPERATOR_NAME }}/operator.yaml operators/${{ env.OPERATOR_NAME }}/Dockerfile
+
             # 5️⃣ 构建 & 推送 Docker 镜像
             # 读取 operator.yaml 中的 version 字段
             VERSION=$(awk -F': ' '/version:/ {print $2}' operators/$OPERATOR/operator.yaml | tr -d '"')
@@ -62,6 +65,7 @@ jobs:
             # 构建 & 推送 Docker 镜像
             docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION operators/$OPERATOR/
             docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION
+
 
             # 仍然推送一个 latest 标签
             docker tag fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
