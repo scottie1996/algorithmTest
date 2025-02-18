@@ -15,6 +15,7 @@ jobs:
         id: detect_changes
         run: |
           echo "Detecting changed operators..."
+          git fetch --depth=2
           CHANGED_OPERATORS=$(git diff --name-only HEAD~1 HEAD | grep '^operators/' | awk -F'/' '{print $2}' | sort -u)
           echo "Changed Operators: $CHANGED_OPERATORS"
           echo "changed_operators=${CHANGED_OPERATORS}" >> $GITHUB_ENV
