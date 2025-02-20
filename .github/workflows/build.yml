@@ -29,6 +29,8 @@ jobs:
 
       - name: 🔍 Install XML Parser Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils  # 安装 xmllint
           pip install xmltodict lxml
 
       - name: 🚀 Build & Push Operators
