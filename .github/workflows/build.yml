@@ -107,6 +107,12 @@ jobs:
             mv tmp.json operators_list.json
 
           done
+      - name: 🔍 Generate Operators List
+        run: |
+          python generate_operators_list.py
+          echo "Generated operators_list.json:"
+          cat operators_list.json  # 打印 JSON 以便调试
+          
 
       - name: 🚀 Commit & Push Changes
         run: |
