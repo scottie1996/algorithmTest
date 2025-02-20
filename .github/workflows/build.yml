@@ -32,6 +32,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libxml2-utils  # 安装 xmllint
           pip install xmltodict lxml
+          
+      - name: 🚀 Generate Dockerfile for Changed Operators
+        run: |
+          for OPERATOR in ${{ env.changed_operators }}; do
+            echo "Generating Dockerfile for $OPERATOR..."
+            python generate_dockerfile.py $OPERATOR
+          done
 
       - name: 🚀 Build & Push Operators
         if: env.changed_operators != ''
