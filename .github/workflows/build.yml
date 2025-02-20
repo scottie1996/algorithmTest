@@ -71,16 +71,6 @@ jobs:
 
             echo "CMD_COMMAND before Dockerfile generation: $CMD_COMMAND"
             
-            # 5️⃣ 生成 `Dockerfile`
-            echo "Generating Dockerfile..."
-            cat > operators/$OPERATOR/Dockerfile <<EOF
-FROM $BASE_IMAGE
-WORKDIR /app
-COPY . /app
-RUN pip install -r requirements.txt
-CMD [$CMD_COMMAND]
-EOF
-
             echo "Generated Dockerfile for $OPERATOR:"
             echo "----------------------------------"
             cat operators/$OPERATOR/Dockerfile
