@@ -38,6 +38,8 @@ jobs:
           for OPERATOR in ${{ env.changed_operators }}; do
             echo "Generating Dockerfile for $OPERATOR..."
             python generate_dockerfile.py $OPERATOR
+
+            cat operators/$OPERATOR/Dockerfile  # 打印 Dockerfile 的内容
           done
 
       - name: 🚀 Build & Push Operators
