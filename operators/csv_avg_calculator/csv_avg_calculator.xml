@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tool id="csv_avg_calculator" name="CSV 平均值计算器" version="1.0.5">
+<tool id="csv_avg_calculator" name="CSV 平均值计算器" version="1.0.6">
     <description>计算 CSV 文件中某一列的平均值</description>
     <requirements>
         <requirement type="package">pandas==1.3.3</requirement>
