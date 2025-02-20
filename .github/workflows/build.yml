@@ -25,28 +25,81 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: 🔍 Install XML Parser Dependencies
+        run: |
+          pip install xmltodict lxml
+
       - name: 🚀 Build & Push Operators
         if: env.changed_operators != ''
         run: |
           for OPERATOR in ${{ env.changed_operators }}; do
             echo "Processing operator: $OPERATOR"
 
-            # 1️⃣ 生成 requirements.txt
-            echo "Generating requirements.txt from operator.xml..."
-            # 使用 xmllint 提取 dependencies 部分
-            xmllint --xpath "//tool/requirements/requirement" operators/$OPERATOR/operator.xml | sed 's/<requirement type="package">\([^<]*\)<\/requirement>/\1/g' > operators/$OPERATOR/requirements.txt
+            XML_FILE="operators/$OPERATOR/operator.xml"
+            if [ ! -f "$XML_FILE" ]; then
+                echo "Error: $XML_FILE not found!"
+                exit 1
+            fi
+
+            # 1️⃣ 解析 XML 文件，提取依赖和基础镜像
+            echo "Parsing XML file: $XML_FILE"
+
+            OPERATOR_NAME=$(xmllint --xpath "string(//tool/@id)" $XML_FILE)
+            VERSION=$(xmllint --xpath "string(//tool/@version)" $XML_FILE)
+            BASE_IMAGE=$(xmllint --xpath "string(//container/docker/@image)" $XML_FILE)
+
+            echo "Extracted OPERATOR_NAME: $OPERATOR_NAME"
+            echo "Extracted VERSION: $VERSION"
+            echo "Extracted BASE_IMAGE: $BASE_IMAGE"
+
+            # 2️⃣ 生成 `requirements.txt`
+            echo "Generating requirements.txt..."
+            xmllint --xpath "//requirements/requirement/text()" $XML_FILE | tr ' ' '\n' > operators/$OPERATOR/requirements.txt
             cat operators/$OPERATOR/requirements.txt
 
-            # 2️⃣ 安装依赖
+            # 3️⃣ 安装 Python 依赖
             pip install -r operators/$OPERATOR/requirements.txt
 
-            # 3️⃣ Docker 登录
+            # 4️⃣ Docker 登录
             echo "${{ secrets.HARBOR_PASSWORD }}" | docker login fairmarket.casdc.cn --username "${{ secrets.HARBOR_USER }}" --password-stdin
 
-            # 4️⃣ 读取 `operator.xml`，获取 OPERATOR_NAME 和 VERSION
-            OPERATOR_NAME=$(xmllint --xpath "string(//tool/@id)" operators/$OPERATOR/operator.xml)
-            echo "Extracted OPERATOR_NAME: $OPERATOR_NAME"
+            # 5️⃣ 生成 `Dockerfile`
+            echo "Generating Dockerfile..."
+            cat > operators/$OPERATOR/Dockerfile <<EOF
+            FROM $BASE_IMAGE
+            WORKDIR /app
+            COPY . /app
+            RUN pip install -r requirements.txt
+            CMD ["python", "calculate_avg.py"]
+            EOF
 
-            VERSION=$(xmllint --xpath "string(//tool/version)" operators/$OPERATOR/operator.xml)
-            if [[ -z "$VERSION" ]]; then
-                echo "Error: Version not found
+            cat operators/$OPERATOR/Dockerfile
+
+            # 6️⃣ 构建 & 推送 Docker 镜像
+            docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION operators/$OPERATOR/
+            docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION
+
+            # 推送 `latest` 版本
+            docker tag fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
+            docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
+
+            # 7️⃣ 更新 `operators_list.json`
+            echo "Updating operators_list.json..."
+            if [ ! -f operators_list.json ]; then
+              echo "[]" > operators_list.json
+            fi
+
+            cat operators_list.json | jq --arg name "$OPERATOR_NAME" --arg version "$VERSION" '
+            map(if .name == $name then .version = $version else . end) +
+            if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
+            mv tmp.json operators_list.json
+
+          done
+
+      - name: 🚀 Commit & Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+          git add operators_list.json
+          git commit -m "🔄 Update operator list" || echo "No changes to commit"
+          git push
