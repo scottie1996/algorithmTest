@@ -1,29 +1,55 @@
 import os
 import sys
+import xml.etree.ElementTree as ET
 
 # 默认基础镜像
-DEFAULT_BASE_IMAGE = "python:3.8-slim"
+DEFAULT_BASE_IMAGE = "python:3.8"
 
-def generate_dockerfile(operator_name, base_image=DEFAULT_BASE_IMAGE):
+def parse_xml_config(operator_name):
     """
-    生成指定算子的 Dockerfile
+    解析 XML 获取基础镜像和启动命令
     :param operator_name: 算子名称（即 operators 目录下的子目录名）
-    :param base_image: 运行环境的基础镜像，默认为 Python 3.8 Slim 版
+    :return: (base_image, cmd_command)
     """
+    xml_path = f"operators/{operator_name}/{operator_name}.xml"
     
-    # 指定算子的目录路径
+    # 检查 XML 文件是否存在
+    if not os.path.exists(xml_path):
+        print(f"❌ Error: XML file '{xml_path}' not found.")
+        sys.exit(1)
+    
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+
+    # 解析基础镜像
+    container = root.find("container/docker")
+    base_image = container.get("image") if container is not None else DEFAULT_BASE_IMAGE
+
+    # 解析启动命令
+    command = root.find("command")
+    if command is not None and command.text:
+        cmd_command = command.text.strip().replace("\n", " ").split()
+    else:
+        cmd_command = ["python", "main.py"]  # 默认执行 main.py
+
+    return base_image, cmd_command
+
+def generate_dockerfile(operator_name):
+    """
+    根据 XML 配置生成 Dockerfile
+    :param operator_name: 算子名称
+    """
     operator_dir = f"operators/{operator_name}"
-    
-    # 检查算子目录是否存在
+
     if not os.path.exists(operator_dir):
         print(f"❌ Error: Operator directory '{operator_dir}' not found.")
         sys.exit(1)
 
-    # Dockerfile 目标路径
-    dockerfile_path = os.path.join(operator_dir, "Dockerfile")
+    # 获取 XML 解析的值
+    base_image, cmd_command_list = parse_xml_config(operator_name)
 
-    # 这里可以根据不同的算子设置不同的启动命令
-    cmd_command_list = ["python", "main.py"]  # 假设默认启动 main.py
+    # Dockerfile 路径
+    dockerfile_path = os.path.join(operator_dir, "Dockerfile")
 
     # 生成 Dockerfile 内容
     dockerfile_content = f"""\
@@ -49,7 +75,7 @@ CMD [{", ".join(f'"{cmd}"' for cmd in cmd_command_list)}]
 
     print(f"✅ Dockerfile for {operator_name} generated successfully at {dockerfile_path}")
     
-    # 打印 Dockerfile 内容（用于 GitHub Actions 方便查看）
+    # 打印 Dockerfile 内容
     print("\n==== Generated Dockerfile ====")
     print(dockerfile_content)
     print("================================\n")
