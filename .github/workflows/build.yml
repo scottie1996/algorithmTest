@@ -1,40 +1,114 @@
-name: Build and Push Docker Images
+name: Build & Push Operator Image
 
 on:
-  push:
-    paths:
-      - 'operators/**'
-    branches:
-      - main
+  workflow_dispatch:  # 👈 允许手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: 🛠️ Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Find Changed XML Files
-        id: find-xml
+      - name: 🔍 Detect Changed Operators
+        id: detect_changes
         run: |
-          changed_xmls=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^operators/.*/.*\.xml$' | awk -F'/' '{if ($2==substr($3, 1, length($3)-4)) print $0}')
-          if [[ -z "$changed_xmls" ]]; then
-            echo "No valid XML changes found. Skipping."
-            exit 0
-          fi
-          echo "$changed_xmls" | tee changed_xmls.txt
-          echo "xml_files=$(echo $changed_xmls | tr '\n' ' ')" >> $GITHUB_ENV
+          echo "Detecting changed operators..."
+          git fetch --depth=2
+          CHANGED_OPERATORS=$(git diff --name-only HEAD~1 HEAD | grep '^operators/' | awk -F'/' '{print $2}' | sort -u)
+          echo "Changed Operators: $CHANGED_OPERATORS"
+          echo "changed_operators=${CHANGED_OPERATORS}" >> $GITHUB_ENV
 
-      - name: Build and Push Docker Images
-        if: env.xml_files != ''
-        env:
-          REGISTRY: ghcr.io
-          IMAGE_NAME: ${{ github.repository }}
+      - name: 📦 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: 🔍 Install XML Parser Dependencies
         run: |
-          while IFS= read -r xml_file; do
-            operator_dir=$(dirname "$xml_file")
-            operator_name=$(basename "$operator_dir")
-            docker build -t $REGISTRY/$IMAGE_NAME/$operator_name:latest "$operator_dir"
-            docker push $REGISTRY/$IMAGE_NAME/$operator_name:latest
-          done < changed_xmls.txt
+          pip install xmltodict lxml
+
+      - name: 🚀 Build & Push Operators
+        if: env.changed_operators != ''
+        run: |
+          for OPERATOR in ${{ env.changed_operators }}; do
+            echo "Processing operator: $OPERATOR"
+
+            XML_FILE="operators/$OPERATOR/operator.xml"
+            if [ ! -f "$XML_FILE" ]; then
+                echo "Error: $XML_FILE not found!"
+                exit 1
+            fi
+
+            # 1️⃣ 解析 XML 文件，提取依赖和基础镜像
+            echo "Parsing XML file: $XML_FILE"
+
+            OPERATOR_NAME=$(xmllint --xpath "string(//tool/@id)" $XML_FILE)
+            VERSION=$(xmllint --xpath "string(//tool/@version)" $XML_FILE)
+            BASE_IMAGE=$(xmllint --xpath "string(//container/docker/@image)" $XML_FILE)
+
+            echo "Extracted OPERATOR_NAME: $OPERATOR_NAME"
+            echo "Extracted VERSION: $VERSION"
+            echo "Extracted BASE_IMAGE: $BASE_IMAGE"
+
+            # 2️⃣ 生成 `requirements.txt`
+            echo "Generating requirements.txt..."
+            xmllint --xpath "//requirements/requirement/text()" $XML_FILE | tr ' ' '\n' > operators/$OPERATOR/requirements.txt
+            cat operators/$OPERATOR/requirements.txt
+
+            # 3️⃣ 安装 Python 依赖
+            pip install -r operators/$OPERATOR/requirements.txt
+
+            # 4️⃣ Docker 登录
+            echo "${{ secrets.HARBOR_PASSWORD }}" | docker login fairmarket.casdc.cn --username "${{ secrets.HARBOR_USER }}" --password-stdin
+
+            # 提取 CMD 指令，并转换为 JSON 格式
+            CMD_COMMAND=$(xmllint --xpath "string(//command)" "$XML_FILE" | sed -E 's/\[CDATA\[|\]\]//g' | awk '{for (i=1; i<=NF; i++) printf "\"%s\"%s", $i, (i==NF?"":", ")}')
+
+
+
+            
+            # 5️⃣ 生成 `Dockerfile`
+            echo "Generating Dockerfile..."
+            cat > operators/$OPERATOR/Dockerfile <<EOF
+            FROM $BASE_IMAGE
+            WORKDIR /app
+            COPY . /app
+            RUN pip install -r requirements.txt
+            CMD [$CMD_COMMAND]
+            EOF
+
+            echo "Generated Dockerfile for $OPERATOR:"
+            echo "----------------------------------"
+            cat operators/$OPERATOR/Dockerfile
+            echo "----------------------------------"
+
+            # 6️⃣ 构建 & 推送 Docker 镜像
+            docker build -t fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION -f operators/$OPERATOR/Dockerfile operators/$OPERATOR/
+            docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION
+
+            # 推送 `latest` 版本
+            docker tag fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:$VERSION fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
+            docker push fairmarket.casdc.cn/bigflow-unit/$OPERATOR_NAME:latest
+
+            # 7️⃣ 更新 `operators_list.json`
+            echo "Updating operators_list.json..."
+            if [ ! -f operators_list.json ]; then
+              echo "[]" > operators_list.json
+            fi
+
+            cat operators_list.json | jq --arg name "$OPERATOR_NAME" --arg version "$VERSION" '
+            map(if .name == $name then .version = $version else . end) +
+            if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
+            mv tmp.json operators_list.json
+
+          done
+
+      - name: 🚀 Commit & Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+          git add operators_list.json
+          git commit -m "🔄 Update operator list" || echo "No changes to commit"
+          git push
