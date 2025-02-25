@@ -37,7 +37,7 @@
         "name": "csv_avg_calculator",
         "version": "1.0.10",
         "description": "计算 CSV 文件中某一列的平均值",
-        "help": "该工具计算 CSV 文件中指定列的平均值，并将结果输出为 JSON 文件。\n        \n        **输入参数:**\n        - `input_csv`: 输入 CSV 文件\n        - `column_name`: 需要计算平均值的列名\n        \n        **输出:**\n        - `output_json`: 包含计算结果的 JSON 文件\n        \n        **示例使用:**\n        ```\n        python calculate_avg.py /data/input.csv /data/output.json temperature\n        ```",
+        "help": "该工具计算 CSV 文件中指定列的平均值，并将结果输出为 JSON 文件",
         "requirements": [
             "pandas==1.3.3",
             "numpy==1.21.2"
