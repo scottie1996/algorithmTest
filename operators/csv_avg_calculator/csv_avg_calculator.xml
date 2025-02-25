@@ -32,21 +32,7 @@
     </tests>
     
     <help>
-        <![CDATA[
-        该工具计算 CSV 文件中指定列的平均值，并将结果输出为 JSON 文件。
-        
-        **输入参数:**
-        - `input_csv`: 输入 CSV 文件
-        - `column_name`: 需要计算平均值的列名
-        
-        **输出:**
-        - `output_json`: 包含计算结果的 JSON 文件
-        
-        **示例使用:**
-        ```
-        python calculate_avg.py /data/input.csv /data/output.json temperature
-        ```
-        ]]>
+        该工具计算 CSV 文件中指定列的平均值，并将结果输出为 JSON 文件
     </help>
     
     <credits>
