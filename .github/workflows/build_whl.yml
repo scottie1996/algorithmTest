@@ -1,0 +1,34 @@
+name: Build & Upload Python Wheel
+
+on:
+  push:
+    tags:
+      - 'whl-v*'  # 仅在打类似 whl-v0.1.0 这样的 tag 时触发
+
+jobs:
+  build_whl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: 📦 Install wheel build tools
+        run: pip install setuptools wheel
+
+      - name: 🛠 Build wheel for operator_whl_test
+        run: |
+          cd operators_whl/operator_whl_test
+          python setup.py bdist_wheel
+
+      - name: 🚀 Upload .whl to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: operators_whl/operator_whl_test/dist/*.whl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
