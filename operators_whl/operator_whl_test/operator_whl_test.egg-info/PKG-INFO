@@ -1,0 +1,16 @@
+Metadata-Version: 2.2
+Name: operator_whl_test
+Version: 0.1.0
+Summary: A test operator for building .whl files
+Author: Your Name
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Dynamic: author
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: requires-python
+Dynamic: summary
+
+# operator_whl_test
+
+This is a minimal example package to test building a `.whl` file.

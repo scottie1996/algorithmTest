@@ -1,0 +1,9 @@
+README.md
+setup.py
+operator_whl_test/__init__.py
+operator_whl_test/main.py
+operator_whl_test.egg-info/PKG-INFO
+operator_whl_test.egg-info/SOURCES.txt
+operator_whl_test.egg-info/dependency_links.txt
+operator_whl_test.egg-info/entry_points.txt
+operator_whl_test.egg-info/top_level.txt

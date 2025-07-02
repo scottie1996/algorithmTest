@@ -1,0 +1,2 @@
+[console_scripts]
+operator_whl_test = operator_whl_test.main:main
