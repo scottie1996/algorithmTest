@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - 'whl-v*'  # 仅在打类似 whl-v0.1.0 这样的 tag 时触发
-# on:
-#   workflow_dispatch:  # 👈 暂时改为手动触发
 
 jobs:
   build_whl:
@@ -27,10 +25,29 @@ jobs:
         run: |
           cd operators_whl/operator_whl_test
           python setup.py bdist_wheel
+          cd ../..
 
-      - name: 🚀 Upload .whl to GitHub Release
+      - name: 📝 Generate operators_list.json
+        run: |
+          PACKAGE_DIR="operators_whl/operator_whl_test"
+          DIST_DIR="$PACKAGE_DIR/dist"
+          WHL_FILE=$(ls $DIST_DIR/*.whl | head -n 1)
+          if [ -z "$WHL_FILE" ]; then
+            echo "No wheel file found!"
+            exit 1
+          fi
+          WHL_FILENAME=$(basename $WHL_FILE)
+          # 提取版本号，假设文件名格式：name-version-py3-none-any.whl
+          VERSION=$(echo $WHL_FILENAME | sed -E 's/^.*-([0-9]+\.[0-9]+\.[0-9]+)-.*$/\1/')
+
+          echo "[{\"name\": \"operator_whl_test\", \"version\": \"$VERSION\"}]" > operators_list.json
+          cat operators_list.json
+
+      - name: 🚀 Upload .whl and operators_list.json to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: operators_whl/operator_whl_test/dist/*.whl
+          files: |
+            operators_whl/operator_whl_test/dist/*.whl
+            operators_list.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
