@@ -1,11 +1,11 @@
 name: Build & Upload Python Wheel
 
-# on:
-#   push:
-#     tags:
-#       - 'whl-v*'  # 仅在打类似 whl-v0.1.0 这样的 tag 时触发
 on:
-  workflow_dispatch:  # 👈 暂时改为手动触发
+  push:
+    tags:
+      - 'whl-v*'  # 仅在打类似 whl-v0.1.0 这样的 tag 时触发
+# on:
+#   workflow_dispatch:  # 👈 暂时改为手动触发
 
 jobs:
   build_whl:
