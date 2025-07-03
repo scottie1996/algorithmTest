@@ -37,9 +37,7 @@ jobs:
             exit 1
           fi
           WHL_FILENAME=$(basename $WHL_FILE)
-          # 提取版本号，假设文件名格式：name-version-py3-none-any.whl
           VERSION=$(echo $WHL_FILENAME | sed -E 's/^.*-([0-9]+\.[0-9]+\.[0-9]+)-.*$/\1/')
-
           echo "[{\"name\": \"operator_whl_test\", \"version\": \"$VERSION\"}]" > operators_list.json
           cat operators_list.json
 
@@ -49,5 +47,22 @@ jobs:
           files: |
             operators_whl/operator_whl_test/dist/*.whl
             operators_list.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Commit operators_list_whl.json to main
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+
+          git fetch origin main
+          git checkout main
+
+          git checkout ${{ github.sha }} -- operators_list.json
+          mv operators_list.json operators_list_whl.json
+
+          git add operators_list_whl.json
+          git commit -m "🔄 Update operators_list_whl.json from tag ${{ github.ref_name }}" || echo "No changes to commit"
+          git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
