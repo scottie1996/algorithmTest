@@ -1,9 +1,9 @@
-name: Build & Upload Python Wheel
+name: Build & Upload All Python Wheels
 
 on:
   push:
     tags:
-      - 'whl-v*'  # 仅在打类似 whl-v0.1.0 的 tag 时触发
+      - 'whl-v*'
 
 jobs:
   build_whl:
@@ -21,44 +21,45 @@ jobs:
       - name: 📦 Install wheel build tools
         run: pip install setuptools wheel jq
 
-      - name: 🛠 Build wheel for operator_whl_test
+      - name: 🛠 Build all wheels under operators_whl/
         run: |
-          cd operators_whl/operator_whl_test
-          python setup.py bdist_wheel
-          cd ../..
+          mkdir -p dist_all
+          echo "[]" > operators_list_whl.json
 
-      - name: 📝 Update operators_list_whl.json
-        run: |
-          WHL_NAME="operator_whl_test"
-          PACKAGE_DIR="operators_whl/$WHL_NAME"
-          DIST_DIR="$PACKAGE_DIR/dist"
-          WHL_FILE=$(ls $DIST_DIR/*.whl | head -n 1)
+          for dir in operators_whl/*; do
+            if [ -f "$dir/setup.py" ]; then
+              echo "Building wheel for $dir..."
+              cd "$dir"
+              python setup.py bdist_wheel
+              cd -
 
-          if [ -z "$WHL_FILE" ]; then
-            echo "No wheel file found!"
-            exit 1
-          fi
+              # 拷贝 .whl 到统一目录
+              WHL_PATH=$(ls $dir/dist/*.whl | head -n 1)
+              cp "$WHL_PATH" dist_all/
 
-          WHL_FILENAME=$(basename "$WHL_FILE")
-          VERSION=$(echo "$WHL_FILENAME" | sed -E 's/^.*-([0-9]+\.[0-9]+\.[0-9]+)-.*$/\1/')
-          echo "Detected WHL version: $VERSION"
+              # 获取 whl 名称 & 版本
+              WHL_NAME=$(basename "$dir")
+              WHL_FILENAME=$(basename "$WHL_PATH")
+              VERSION=$(echo "$WHL_FILENAME" | sed -E 's/^.*-([0-9]+\.[0-9]+\.[0-9]+)-.*$/\1/')
 
-          if [ ! -f operators_list_whl.json ]; then
-            echo "[]" > operators_list_whl.json
-          fi
+              # 更新 JSON 文件
+              cat operators_list_whl.json | jq --arg name "$WHL_NAME" --arg version "$VERSION" '
+              map(if .name == $name then .version = $version else . end) +
+              if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
+              mv tmp.json operators_list_whl.json
+            fi
+          done
 
-          cat operators_list_whl.json | jq --arg name "$WHL_NAME" --arg version "$VERSION" '
-          map(if .name == $name then .version = $version else . end) +
-          if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
-
-          mv tmp.json operators_list_whl.json
+          echo "✅ Built all wheels:"
+          ls dist_all
+          echo "📄 operators_list_whl.json:"
           cat operators_list_whl.json
 
-      - name: 🚀 Upload .whl and operators_list_whl.json to GitHub Release
+      - name: 🚀 Upload all .whl and JSON to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            operators_whl/operator_whl_test/dist/*.whl
+            dist_all/*.whl
             operators_list_whl.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,9 +72,7 @@ jobs:
           git fetch origin main
           git checkout main
 
-          # 从当前 tag 取出 JSON 文件并移动
           git checkout ${{ github.sha }} -- operators_list_whl.json || true
-
           git add operators_list_whl.json
           git commit -m "🔄 Update operators_list_whl.json from tag ${{ github.ref_name }}" || echo "No changes to commit"
           git push origin main
