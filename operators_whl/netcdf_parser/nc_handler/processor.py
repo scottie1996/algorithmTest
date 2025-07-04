@@ -1,6 +1,6 @@
 from typing import List
 
-def process_cbf(input_path: str, output_prefix: str, file_name: str, ext: str) -> List[str]:
+def process_nc(input_path: str, output_prefix: str, file_name: str, ext: str) -> List[str]:
     """
     处理 CBF 文件的入口函数（伪代码框架）
 
