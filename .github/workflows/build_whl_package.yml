@@ -38,8 +38,9 @@ jobs:
             echo "⚠️ git diff failed"
           fi
 
-          # 获取新增或变更的 .whl 文件路径
-          NEW_WHL_FILE=$(git diff --name-only origin/main HEAD | grep 'operators_whl_package/.*\.whl$' || true)
+          # 用 HEAD~1 和 HEAD 比较差异，获取本次提交中新增或修改的whl文件
+          NEW_WHL_FILE=$(git diff --name-only HEAD~1 HEAD | grep 'operators_whl_package/.*\.whl$' || true)
+      
           echo "✅ Found .whl file: $NEW_WHL_FILE"
 
           if [ -n "$NEW_WHL_FILE" ]; then
