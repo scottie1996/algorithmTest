@@ -27,8 +27,15 @@ jobs:
         run: |
           echo "[]" > whl_metadata.json  # Initialize empty JSON file
 
+          # 调试输出 git diff 查看文件变更
+          echo "💥 Checking git diff for .whl files"
+          git diff --name-only de3de5403b8bda0d3b2ac0afcfe143ed26a37073
+
           # 获取新增的 .whl 文件路径
-          NEW_WHL_FILE=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'operators_whl_package/.*\.whl$')
+          NEW_WHL_FILE=$(git diff --name-only de3de5403b8bda0d3b2ac0afcfe143ed26a37073 | grep 'operators_whl_package/.*\.whl$')
+
+          # 打印检查结果
+          echo "✅ Found .whl file: $NEW_WHL_FILE"
 
           if [ -n "$NEW_WHL_FILE" ]; then
             # 获取包名和版本号
