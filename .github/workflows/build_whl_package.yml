@@ -29,10 +29,10 @@ jobs:
 
           # 调试输出 git diff 查看文件变更
           echo "💥 Checking git diff for .whl files"
-          git diff --name-only de3de5403b8bda0d3b2ac0afcfe143ed26a37073
+          git diff --name-only HEAD~1 HEAD
 
           # 获取新增的 .whl 文件路径
-          NEW_WHL_FILE=$(git diff --name-only de3de5403b8bda0d3b2ac0afcfe143ed26a37073 | grep 'operators_whl_package/.*\.whl$')
+          NEW_WHL_FILE=$(git diff --name-only HEAD~1 HEAD | grep 'operators_whl_package/.*\.whl$')
 
           # 打印检查结果
           echo "✅ Found .whl file: $NEW_WHL_FILE"
