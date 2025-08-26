@@ -27,13 +27,13 @@ jobs:
         run: |
           echo "[]" > whl_metadata.json  # Initialize empty JSON file
 
-          # 检查远程 main 分支的当前提交和前一个提交之间的差异
+          # 检查远程 main 分支的当前提交与当前工作树的差异
           echo "💥 Checking git diff for .whl files"
           git fetch origin main  # 获取最新的 main 分支
-          git diff --name-only origin/main~1..origin/main  # 比较 main 分支当前提交与上一个提交的差异
+          git diff --name-only origin/main HEAD  # 比较远程 main 分支和当前提交的差异
 
           # 获取新增的 .whl 文件路径，检测所有 .whl 文件变化
-          NEW_WHL_FILE=$(git diff --name-only origin/main~1..origin/main | grep 'operators_whl_package/.*\.whl$')
+          NEW_WHL_FILE=$(git diff --name-only origin/main HEAD | grep 'operators_whl_package/.*\.whl$')
 
           # 打印检查结果
           echo "✅ Found .whl file: $NEW_WHL_FILE"
