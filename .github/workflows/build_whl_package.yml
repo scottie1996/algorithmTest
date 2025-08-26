@@ -1,0 +1,78 @@
+name: Upload Incremental Wheels to PyPI and Update Metadata
+
+on:
+  push:
+    paths:
+      - 'operators_whl_package/**'  # 仅在 `/operators_whl_package` 目录下发生变更时触发
+
+jobs:
+  upload_whl:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: 🧾 Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up Python environment
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      # Install Twine and jq
+      - name: 📦 Install tools
+        run: pip install twine jq
+
+      # Collect newly added .whl files and update JSON metadata
+      - name: 🛠 Collect and update JSON metadata
+        run: |
+          mkdir -p dist_all
+          echo "[]" > whl_metadata.json  # Initialize empty JSON file
+
+          # 遍历新增的目录及文件
+          for whl_file in $(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep 'operators_whl_package/.*\.whl$'); do
+            if [ -f "$whl_file" ]; then
+              # 拷贝 .whl 文件到统一目录
+              cp "$whl_file" dist_all/
+
+              # 获取包名和版本号
+              WHL_NAME=$(basename "$whl_file")
+              VERSION=$(echo "$WHL_NAME" | sed -E 's/^.*-([0-9]+\.[0-9]+\.[0-9]+)-.*$/\1/')
+
+              # 更新 whl_metadata.json 文件
+              cat whl_metadata.json | jq --arg name "$WHL_NAME" --arg version "$VERSION" '
+              map(if .name == $name then .version = $version else . end) +
+              if map(.name) | index($name) then [] else [{"name": $name, "version": $version}] end' > tmp.json
+              mv tmp.json whl_metadata.json
+            fi
+          done
+
+          echo "✅ Collected all new .whl files:"
+          ls dist_all
+          echo "📄 Updated whl_metadata.json:"
+          cat whl_metadata.json
+
+      # Upload new .whl files to PyPI using Twine
+      - name: 🚀 Upload wheels to PyPI
+        run: |
+          twine upload dist_all/*.whl
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}  # PyPI 用户名
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}  # PyPI 密码
+
+      # Commit updated JSON metadata to GitHub
+      - name: 📝 Commit and push whl_metadata.json
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+
+          git fetch origin main
+          git checkout main
+
+          git checkout ${{ github.sha }} -- whl_metadata.json || true  # 获取 JSON 文件的更新
+          git add whl_metadata.json
+          git commit -m "🔄 Update whl_metadata.json from changes in /operators_whl_package" || echo "No changes to commit"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub Token，用于推送更新
