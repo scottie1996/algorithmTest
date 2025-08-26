@@ -60,8 +60,8 @@ jobs:
           echo "📁 Uploading: ${{ steps.collect_and_update_JSON_metadata.outputs.NEW_WHL_FILE }}"
           twine upload "${{ steps.collect_and_update_JSON_metadata.outputs.NEW_WHL_FILE }}"
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          TWINE_USERNAME: __token__  # 使用特殊的 __token__ 字符串作为用户名
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}  # 使用 API Token 作为密码
 
       - name: 📝 Commit and push whl_metadata.json
         if: success() && steps.collect_and_update_JSON_metadata.outputs.NEW_WHL_FILE != ''
