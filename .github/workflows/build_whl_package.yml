@@ -1,7 +1,7 @@
 name: Upload Incremental Wheel to PyPI and Update Metadata
 
 on:
-  workflow_dispatch:  # 允许手动触发工作流
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   upload_whl:
@@ -11,7 +11,7 @@ jobs:
       - name: 🧾 Checkout repository (full history)
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 拉取完整历史和所有分支
+          fetch-depth: 0  # 拉取完整提交历史，保证能使用 HEAD~1 比较
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v4
@@ -22,25 +22,20 @@ jobs:
         run: pip install twine jq
 
       - name: 🛠 Collect and update JSON metadata
+        id: collect_and_update_JSON_metadata
         run: |
           echo "[]" > whl_metadata.json
 
-          echo "💥 Fetching and checking git diff for .whl files"
+          echo "💥 Checking git diff for .whl files"
           git fetch origin main || echo "⚠️ git fetch failed but ignored"
 
-          # 查看分支和最近提交，帮助调试
+          # 查看分支和提交，便于调试
           git branch -vv
           git log -3 --oneline
-          git log origin/main -3 --oneline
 
-          # 对比远程 main 分支和当前 HEAD 之间的差异文件
-          if ! git diff --name-only origin/main HEAD; then
-            echo "⚠️ git diff failed"
-          fi
-
-          # 用 HEAD~1 和 HEAD 比较差异，获取本次提交中新增或修改的whl文件
+          # 比较当前提交和上一个提交，获取新增或修改的whl文件
           NEW_WHL_FILE=$(git diff --name-only HEAD~1 HEAD | grep 'operators_whl_package/.*\.whl$' || true)
-      
+
           echo "✅ Found .whl file: $NEW_WHL_FILE"
 
           if [ -n "$NEW_WHL_FILE" ]; then
@@ -56,11 +51,14 @@ jobs:
             echo "❌ No new .whl file detected"
           fi
 
+          # 将变量输出给后续步骤
+          echo "NEW_WHL_FILE=$NEW_WHL_FILE" >> $GITHUB_OUTPUT
+
       - name: 🚀 Upload wheel to PyPI
         if: success() && steps.collect_and_update_JSON_metadata.outputs.NEW_WHL_FILE != ''
         run: |
-          echo "📁 Uploading: $NEW_WHL_FILE"
-          twine upload "$NEW_WHL_FILE"
+          echo "📁 Uploading: ${{ steps.collect_and_update_JSON_metadata.outputs.NEW_WHL_FILE }}"
+          twine upload "${{ steps.collect_and_update_JSON_metadata.outputs.NEW_WHL_FILE }}"
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
